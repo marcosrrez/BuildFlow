@@ -60,3 +60,22 @@ class Milestone(Base):
     status: Mapped[str] = mapped_column(String(20), default="upcoming")
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Decision(Base):
+    __tablename__ = "decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
+    activity_id: Mapped[int | None] = mapped_column(ForeignKey("activities.id"))
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    due_date: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, decided
+    choice_made: Mapped[str | None] = mapped_column(String(500))
+    impact_level: Mapped[str] = mapped_column(String(20), default="medium")  # low, medium, high
+    knowledge_term: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    activity: Mapped["Activity"] = relationship()

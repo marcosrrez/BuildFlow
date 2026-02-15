@@ -3,12 +3,13 @@ import { useState } from 'react'
 import api from '../../api/client'
 import type { Activity, Milestone } from '../../types'
 import StatusBadge from '../shared/StatusBadge'
-import { Calendar, Plus, Zap, AlertTriangle, Trash2 } from 'lucide-react'
+import DecisionTracker from './DecisionTracker'
+import { Calendar, Plus, Zap, AlertTriangle, Trash2, CheckSquare } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 export default function SchedulePage({ projectId }: { projectId: number }) {
   const qc = useQueryClient()
-  const [view, setView] = useState<'gantt' | 'list'>('gantt')
+  const [view, setView] = useState<'gantt' | 'list' | 'decisions'>('gantt')
 
   const { data: activities } = useQuery<Activity[]>({
     queryKey: ['activities', projectId],
@@ -49,10 +50,23 @@ export default function SchedulePage({ projectId }: { projectId: number }) {
         <h1 className="text-2xl font-bold text-gray-900">Schedule Manager</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => setView(view === 'gantt' ? 'list' : 'gantt')}
-            className="border px-3 py-2 rounded-lg text-sm hover:bg-gray-50"
+            onClick={() => setView('gantt')}
+            className={`px-3 py-2 rounded-lg text-sm transition-colors ${view === 'gantt' ? 'bg-blue-600 text-white' : 'border hover:bg-gray-50'}`}
           >
-            {view === 'gantt' ? 'List View' : 'Gantt View'}
+            Gantt
+          </button>
+          <button
+            onClick={() => setView('list')}
+            className={`px-3 py-2 rounded-lg text-sm transition-colors ${view === 'list' ? 'bg-blue-600 text-white' : 'border hover:bg-gray-50'}`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setView('decisions')}
+            className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${view === 'decisions' ? 'bg-blue-600 text-white' : 'border hover:bg-gray-50'}`}
+          >
+            <CheckSquare className="w-4 h-4" />
+            Decisions
           </button>
         </div>
       </div>
@@ -157,6 +171,11 @@ export default function SchedulePage({ projectId }: { projectId: number }) {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Decisions board */}
+      {view === 'decisions' && (
+        <DecisionTracker projectId={projectId} />
       )}
     </div>
   )

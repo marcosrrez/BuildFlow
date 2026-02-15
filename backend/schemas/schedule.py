@@ -85,6 +85,41 @@ class MilestoneRead(MilestoneBase):
     model_config = {"from_attributes": True}
 
 
+class DecisionBase(BaseModel):
+    title: str
+    description: str | None = None
+    due_date: date | None = None
+    status: str = "pending"
+    choice_made: str | None = None
+    impact_level: str = "medium"
+    knowledge_term: str | None = None
+    activity_id: int | None = None
+
+
+class DecisionCreate(DecisionBase):
+    pass
+
+
+class DecisionUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    due_date: date | None = None
+    status: str | None = None
+    choice_made: str | None = None
+    impact_level: str | None = None
+    knowledge_term: str | None = None
+    activity_id: int | None = None
+    decided_at: datetime | None = None
+
+
+class DecisionRead(DecisionBase):
+    id: int
+    project_id: int
+    created_at: datetime
+    decided_at: datetime | None = None
+    model_config = {"from_attributes": True}
+
+
 class DelayImpactRequest(BaseModel):
     activity_id: int
     delay_days: int

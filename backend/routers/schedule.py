@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.schedule import Activity, ActivityDependency, Milestone
+from backend.models.schedule import Activity, ActivityDependency, Milestone, Decision
 from backend.schemas.schedule import (
     ActivityCreate, ActivityUpdate, ActivityRead,
     DependencyCreate,
     MilestoneCreate, MilestoneUpdate, MilestoneRead,
+    DecisionCreate, DecisionUpdate, DecisionRead,
     DelayImpactRequest, CriticalPathResult,
 )
 from backend.schemas.analytics import WeatherImpactResult
@@ -235,6 +236,14 @@ HOME_BUILD_TEMPLATE = [
     ("A280", "Punch List & Closeout", 10, ["A270"]),
 ]
 
+DECISION_TEMPLATE = [
+    ("Foundation Type Selection", "Choose between Slab, Crawlspace, or Basement based on soil and budget.", "A030", "02-FOUND", "high"),
+    ("Roofing Material & Color", "Select shingles or metal roofing to allow for material lead times.", "A110", "04-ROOF", "medium"),
+    ("Plumbing Fixture Selection", "Pick sinks, faucets, and showers so rough-in can be sized correctly.", "A130", "05-PLUMB", "medium"),
+    ("Kitchen Cabinet Layout", "Finalize cabinet design before interior framing completes.", "A190", "190", "high"),
+    ("Flooring Materials", "Order hardwood or tile at least 4 weeks before installation.", "A220", "10-FLOOR", "medium"),
+]
+
 
 @router.post("/projects/{project_id}/schedule/template", status_code=201)
 def load_template(project_id: int, db: Session = Depends(get_db)):
@@ -250,6 +259,19 @@ def load_template(project_id: int, db: Session = Depends(get_db)):
         for pred_code in preds:
             dep = ActivityDependency(activity_id=code_to_id[code], predecessor_id=code_to_id[pred_code])
             db.add(dep)
+            
+    # Add smart decisions
+    for title, desc, act_code, k_term, impact in DECISION_TEMPLATE:
+        dec = Decision(
+            project_id=project_id,
+            title=title,
+            description=desc,
+            activity_id=code_to_id.get(act_code),
+            knowledge_term=k_term,
+            impact_level=impact,
+            status="pending"
+        )
+        db.add(dec)
 
     db.commit()
     _recalc_critical_path(project_id, db)
@@ -259,3 +281,48 @@ def load_template(project_id: int, db: Session = Depends(get_db)):
 @router.get("/projects/{project_id}/schedule/weather-impact", response_model=WeatherImpactResult)
 def weather_impact(project_id: int, db: Session = Depends(get_db)):
     return run_weather_impact(db, project_id)
+
+
+# Decision Tracking (Selection Tracker)
+@router.get("/projects/{project_id}/schedule/decisions", response_model=list[DecisionRead])
+def list_decisions(project_id: int, status: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(Decision).filter(Decision.project_id == project_id)
+    if status:
+        q = q.filter(Decision.status == status)
+    return q.order_by(Decision.due_date).all()
+
+
+@router.post("/projects/{project_id}/schedule/decisions", response_model=DecisionRead, status_code=201)
+def create_decision(project_id: int, data: DecisionCreate, db: Session = Depends(get_db)):
+    dec = Decision(project_id=project_id, **data.model_dump())
+    db.add(dec)
+    db.commit()
+    db.refresh(dec)
+    return dec
+
+
+@router.put("/projects/{project_id}/schedule/decisions/{dec_id}", response_model=DecisionRead)
+def update_decision(project_id: int, dec_id: int, data: DecisionUpdate, db: Session = Depends(get_db)):
+    dec = db.query(Decision).filter(Decision.id == dec_id, Decision.project_id == project_id).first()
+    if not dec:
+        raise HTTPException(404, "Decision not found")
+    
+    update_data = data.model_dump(exclude_unset=True)
+    if update_data.get("status") == "decided" and not update_data.get("decided_at"):
+        from datetime import datetime
+        update_data["decided_at"] = datetime.utcnow()
+        
+    for key, val in update_data.items():
+        setattr(dec, key, val)
+    db.commit()
+    db.refresh(dec)
+    return dec
+
+
+@router.delete("/projects/{project_id}/schedule/decisions/{dec_id}", status_code=204)
+def delete_decision(project_id: int, dec_id: int, db: Session = Depends(get_db)):
+    dec = db.query(Decision).filter(Decision.id == dec_id, Decision.project_id == project_id).first()
+    if not dec:
+        raise HTTPException(404, "Decision not found")
+    db.delete(dec)
+    db.commit()

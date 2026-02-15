@@ -63,6 +63,21 @@ export interface Milestone {
   actual_date?: string; status: string;
 }
 
+export interface Decision {
+  id: number;
+  project_id: number;
+  activity_id?: number;
+  title: string;
+  description?: string;
+  due_date?: string;
+  status: 'pending' | 'decided';
+  choice_made?: string;
+  impact_level: 'low' | 'medium' | 'high';
+  knowledge_term?: string;
+  created_at: string;
+  decided_at?: string;
+}
+
 export interface Permit {
   id: number; project_id: number; permit_type: string; permit_number?: string;
   jurisdiction?: string; status: string; application_date?: string;
