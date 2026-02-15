@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "buildflow"
+version = "0.1.0"
+description = "Construction management platform for homeowner general contractors"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "pandas>=2.0.0",
+    "numpy>=1.26.0",
+    "openpyxl>=3.1.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
+    "anthropic>=0.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "pytest-asyncio>=0.23.0",
+]
+pdf = [
+    "reportlab>=4.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["backend*"]

@@ -1,0 +1,9 @@
+{
+  "name": "BuildFlow",
+  "short_name": "BuildFlow",
+  "description": "Construction management for homeowner GCs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#2563eb"
+}
